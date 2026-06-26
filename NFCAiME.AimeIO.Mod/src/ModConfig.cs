@@ -11,18 +11,18 @@ namespace NFCAiME.AimeIO.Mod
         public string SessionKey = "";
         public int CardTtlMs = 5000;
         public string PreferredAccessCode = "private";
+        private const string ConfigFileName = "NFCAiME.AimeIO.Mod.toml";
 
         public static ModConfig Load()
         {
             var root = AppDomain.CurrentDomain.BaseDirectory;
             var config = new ModConfig();
 
-            ReadToml(Path.Combine(root, "Mods", "NFCAiME.AimeIO.Mod.toml"), config);
-            ReadSegatoolsIni(Path.Combine(root, "segatools.ini"), config);
+            ReadToml(Path.Combine(root, ConfigFileName), config);
 
             if (string.IsNullOrWhiteSpace(config.SessionKey))
             {
-                WriteDefaultToml(Path.Combine(root, "Mods", "NFCAiME.AimeIO.Mod.toml"), config);
+                WriteDefaultToml(Path.Combine(root, ConfigFileName), config);
             }
 
             config.ServerUrl = NormalizeServerUrl(config.ServerUrl);
@@ -66,43 +66,6 @@ namespace NFCAiME.AimeIO.Mod
             foreach (var kv in ReadKeyValues(path))
             {
                 Apply(kv.Key, kv.Value, config);
-            }
-        }
-
-        private static void ReadSegatoolsIni(string path, ModConfig config)
-        {
-            if (!File.Exists(path))
-            {
-                return;
-            }
-
-            var inNFCAimeIo = false;
-            foreach (var raw in File.ReadAllLines(path))
-            {
-                var line = StripComment(raw).Trim();
-                if (line.Length == 0)
-                {
-                    continue;
-                }
-
-                if (line.StartsWith("[") && line.EndsWith("]"))
-                {
-                    inNFCAimeIo = string.Equals(line, "[nfcaimeio]", StringComparison.OrdinalIgnoreCase);
-                    continue;
-                }
-
-                if (!inNFCAimeIo)
-                {
-                    continue;
-                }
-
-                var idx = line.IndexOf('=');
-                if (idx <= 0)
-                {
-                    continue;
-                }
-
-                Apply(line.Substring(0, idx).Trim(), Unquote(line.Substring(idx + 1).Trim()), config);
             }
         }
 

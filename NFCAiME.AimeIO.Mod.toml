@@ -1,0 +1,5 @@
+enabled = true
+serverUrl = "https://card.segasb.me/"
+session-key = ""
+cardTtlMs = 5000
+preferredAccessCode = "private"
