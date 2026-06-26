@@ -5,8 +5,6 @@ namespace NFCAiME.AimeIO.Mod
 {
     internal static class AesGcmDecryptor
     {
-        private const string KeyHex = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
-
         public static byte[] Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag)
         {
             if (nonce == null || nonce.Length != 12)
@@ -19,7 +17,16 @@ namespace NFCAiME.AimeIO.Mod
                 throw new ArgumentException("tag must be 16 bytes");
             }
 
-            var key = Hex.ToBytes(KeyHex);
+            if (string.IsNullOrWhiteSpace(BuildSecrets.AesKeyHex))
+            {
+                throw new CryptographicException("AES key is not configured for this build");
+            }
+
+            var key = Hex.ToBytes(BuildSecrets.AesKeyHex);
+            if (key.Length != 32)
+            {
+                throw new CryptographicException("AES key must be 32 bytes");
+            }
             var h = EncryptBlock(key, new byte[16]);
             var j0 = new byte[16];
             Buffer.BlockCopy(nonce, 0, j0, 0, 12);

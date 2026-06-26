@@ -9,6 +9,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <NoWarn>1701;1702</NoWarn>
     <GameDir Condition="'$(GameDir)' == ''">D:\SDGA_1.60\Package</GameDir>
+    <NFCAIME_AES_KEY_HEX Condition="'$(NFCAIME_AES_KEY_HEX)' == ''"></NFCAIME_AES_KEY_HEX>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,4 +30,14 @@
       <Private>false</Private>
     </Reference>
   </ItemGroup>
+
+  <Target Name="GenerateBuildSecrets" BeforeTargets="BeforeCompile">
+    <ItemGroup>
+      <Compile Include="$(IntermediateOutputPath)BuildSecrets.g.cs" />
+    </ItemGroup>
+    <WriteLinesToFile
+      File="$(IntermediateOutputPath)BuildSecrets.g.cs"
+      Lines="namespace NFCAiME.AimeIO.Mod { internal static class BuildSecrets { public const string AesKeyHex = &quot;$(NFCAIME_AES_KEY_HEX)&quot;%3B } }"
+      Overwrite="true" />
+  </Target>
 </Project>
