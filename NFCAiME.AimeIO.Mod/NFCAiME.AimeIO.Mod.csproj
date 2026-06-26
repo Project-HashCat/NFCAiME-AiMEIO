@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net46</TargetFramework>
+    <AssemblyName>NFCAiME.AimeIO.Mod</AssemblyName>
+    <RootNamespace>NFCAiME.AimeIO.Mod</RootNamespace>
+    <LangVersion>7.3</LangVersion>
+    <OutputPath>..\build\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <NoWarn>1701;1702</NoWarn>
+    <GameDir Condition="'$(GameDir)' == ''">D:\SDGA_1.60\Package</GameDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="MelonLoader">
+      <HintPath>$(GameDir)\MelonLoader\net35\MelonLoader.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(GameDir)\MelonLoader\net35\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="WebSocketDotNet">
+      <HintPath>$(GameDir)\MelonLoader\net35\WebSocketDotNet.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>$(GameDir)\MelonLoader\Managed\Newtonsoft.Json.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

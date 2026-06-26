@@ -1,4 +1,7 @@
 build/
+obj/
+**/obj/
+**/bin/
 .venv/
 __pycache__/
 *.pyc
