@@ -1,5 +1,4 @@
 using System.Text;
-using Newtonsoft.Json.Linq;
 
 namespace NFCAiME.AimeIO.Mod
 {
@@ -7,27 +6,34 @@ namespace NFCAiME.AimeIO.Mod
     {
         public static CardPayload Parse(string json)
         {
-            var obj = JObject.Parse(json);
-            var encrypted = obj.Value<bool?>("encrypted") == true ||
-                            string.Equals(obj.Value<string>("type"), "encrypted", System.StringComparison.OrdinalIgnoreCase);
+            var obj = FlatJson.Parse(json);
+            var encrypted = FlatJson.Bool(obj, "encrypted") ||
+                            string.Equals(Get(obj, "type"), "encrypted", System.StringComparison.OrdinalIgnoreCase);
 
             if (encrypted)
             {
                 var plaintext = AesGcmDecryptor.Decrypt(
-                    Hex.ToBytes(obj.Value<string>("nonce")),
-                    Hex.ToBytes(obj.Value<string>("ciphertext")),
-                    Hex.ToBytes(obj.Value<string>("tag")));
-                obj = JObject.Parse(Encoding.UTF8.GetString(plaintext));
+                    Hex.ToBytes(Get(obj, "nonce")),
+                    Hex.ToBytes(Get(obj, "ciphertext")),
+                    Hex.ToBytes(Get(obj, "tag")));
+                obj = FlatJson.Parse(Encoding.UTF8.GetString(plaintext));
             }
 
             return new CardPayload
             {
-                Type = obj.Value<string>("type"),
-                PrivateAccessCode = NormalizeCode(obj.Value<string>("privateAccessCode")),
-                OfficialAccessCode = NormalizeCode(obj.Value<string>("officialAccessCode")),
-                Idm = NormalizeHex(obj.Value<string>("idm")),
+                Type = Get(obj, "type"),
+                PrivateAccessCode = NormalizeCode(Get(obj, "privateAccessCode")),
+                OfficialAccessCode = NormalizeCode(Get(obj, "officialAccessCode")),
+                Idm = NormalizeHex(Get(obj, "idm")),
+                AimeId = FlatJson.UInt(obj, "aimeId", "userId", "accountId"),
                 Encrypted = encrypted
             };
+        }
+
+        private static string Get(System.Collections.Generic.Dictionary<string, string> obj, string key)
+        {
+            string value;
+            return obj.TryGetValue(key, out value) ? value : "";
         }
 
         private static string NormalizeCode(string value)

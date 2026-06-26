@@ -36,6 +36,21 @@ namespace NFCAiME.AimeIO.Mod
             }
         }
 
+        public static bool TryGetPayload(out CardPayload payload)
+        {
+            lock (Gate)
+            {
+                if (_payload != null && DateTime.UtcNow <= _expiresAt)
+                {
+                    payload = _payload;
+                    return true;
+                }
+
+                payload = null;
+                return false;
+            }
+        }
+
         public static string GetAccessCode()
         {
             lock (Gate)
@@ -45,14 +60,19 @@ namespace NFCAiME.AimeIO.Mod
                     return "";
                 }
 
-                var preferred = _config == null ? "private" : _config.PreferredAccessCode;
-                if (preferred == "official")
-                {
-                    return FirstNonEmpty(_payload.OfficialAccessCode, _payload.PrivateAccessCode);
-                }
-
-                return FirstNonEmpty(_payload.PrivateAccessCode, _payload.OfficialAccessCode);
+                return GetAccessCode(_payload);
             }
+        }
+
+        public static string GetAccessCode(CardPayload payload)
+        {
+            var preferred = _config == null ? "private" : _config.PreferredAccessCode;
+            if (preferred == "official")
+            {
+                return FirstNonEmpty(payload.OfficialAccessCode, payload.PrivateAccessCode);
+            }
+
+            return FirstNonEmpty(payload.PrivateAccessCode, payload.OfficialAccessCode);
         }
 
         public static string GetOfflineId()

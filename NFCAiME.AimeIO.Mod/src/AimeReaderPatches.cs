@@ -1,32 +1,96 @@
 using System;
 using System.Reflection;
+using AMDaemon;
 using HarmonyLib;
+using MAI2.Util;
+using Manager;
 using MelonLoader;
+using Process.Entry;
 
 namespace NFCAiME.AimeIO.Mod
 {
     internal static class AimeReaderPatches
     {
         private static bool _loggedInjection;
+        private static bool _loggedMissingAimeId;
+        private static bool _loggedInvalidAccessCode;
 
         public static void Apply(HarmonyLib.Harmony harmony)
         {
-            var type = AccessTools.TypeByName("Manager.AimeReaderManager");
-            if (type == null)
+            Patch(harmony, typeof(TryAime), "Execute", nameof(TryAimeExecutePrefix));
+            Patch(harmony, typeof(AimeReaderManager), "AnyRead", nameof(AnyReadPrefix));
+            Patch(harmony, typeof(AimeReaderManager), "AdvCheck", nameof(AdvCheckPrefix));
+            Patch(harmony, typeof(AimeReaderManager), "GetResult", nameof(GetResultPrefix));
+            Patch(harmony, typeof(AimeReaderManager), "GetAccessCode", nameof(GetAccessCodePrefix));
+            Patch(harmony, typeof(AimeReaderManager), "GetAimeId", nameof(GetAimeIdPrefix));
+            Patch(harmony, typeof(AimeReaderManager), "GetOfflineIdString", nameof(GetOfflineIdStringPrefix));
+            Patch(harmony, typeof(AimeReaderManager), "GetSegaIdAuthKey", nameof(GetSegaIdAuthKeyPrefix));
+        }
+
+        private static bool TryAimeExecutePrefix(TryAime __instance)
+        {
+            CardPayload payload;
+            if (!CardCache.TryGetPayload(out payload))
             {
-                MelonLogger.Warning("[NFCAiME] Manager.AimeReaderManager not found");
+                return true;
+            }
+
+            var accessCodeText = CardCache.GetAccessCode(payload);
+            if (!AccessCode.CanMake(accessCodeText))
+            {
+                LogOnce(ref _loggedInvalidAccessCode, "[NFCAiME] cached card has no valid 20-digit access code");
+                return true;
+            }
+
+            if (payload.AimeId == 0)
+            {
+                LogOnce(ref _loggedMissingAimeId, "[NFCAiME] cached card has no aimeId/userId/accountId; skip Unity login injection");
+                return true;
+            }
+
+            var modeProperty = typeof(TryAime).GetProperty("Mode", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (modeProperty != null && Convert.ToInt32(modeProperty.GetValue(__instance, null)) == 6)
+            {
+                return false;
+            }
+
+            var aimeReader = SingletonStateMachine<AmManager, AmManager.EState>.Instance.AimeReader;
+            var accessCode = AccessCode.Make(accessCodeText);
+
+            SetField(aimeReader, "currentState", 9);
+            SetField(aimeReader, "_result", 3);
+            SetField(aimeReader, "_accessCode", accessCode);
+            SetField(aimeReader, "_aimeId", new AimeId(payload.AimeId));
+            SetField(aimeReader, "_segaIdAuthKey", string.Empty);
+            SetField(aimeReader, "_offlineId", AimeOfflineId.Make(accessCode));
+
+            if (modeProperty != null)
+            {
+                modeProperty.SetValue(__instance, Enum.ToObject(modeProperty.PropertyType, 3), null);
+            }
+
+            LogInjectedOnce();
+            return false;
+        }
+
+        private static void SetField(object target, string name, object value)
+        {
+            var field = target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (field == null)
+            {
                 return;
             }
 
-            Patch(harmony, type, "AnyRead", nameof(AnyReadPrefix));
-            Patch(harmony, type, "AdvCheck", nameof(AdvCheckPrefix));
-            Patch(harmony, type, "GetResult", nameof(GetResultPrefix));
-            Patch(harmony, type, "GetAccessCode", nameof(GetAccessCodePrefix));
-            Patch(harmony, type, "GetOfflineIdString", nameof(GetOfflineIdStringPrefix));
-            Patch(harmony, type, "GetSegaIdAuthKey", nameof(GetSegaIdAuthKeyPrefix));
+            if (field.FieldType.IsEnum && value is int)
+            {
+                field.SetValue(target, Enum.ToObject(field.FieldType, value));
+                return;
+            }
+
+            field.SetValue(target, value);
         }
 
-        private static void Patch(HarmonyLib.Harmony harmony, Type targetType, string targetName, string prefixName)
+        private static void Patch(HarmonyLib.Harmony harmony, System.Type targetType, string targetName, string prefixName)
         {
             var target = AccessTools.Method(targetType, targetName);
             var prefix = typeof(AimeReaderPatches).GetMethod(prefixName, BindingFlags.Static | BindingFlags.NonPublic);
@@ -62,21 +126,14 @@ namespace NFCAiME.AimeIO.Mod
             return false;
         }
 
-        private static bool GetResultPrefix(MethodBase __originalMethod, ref object __result)
+        private static bool GetResultPrefix(ref AimeReaderManager.Result __result)
         {
             if (!CardCache.HasValidCard())
             {
                 return true;
             }
 
-            var method = __originalMethod as MethodInfo;
-            if (method == null)
-            {
-                return true;
-            }
-
-            var resultType = method.ReturnType;
-            __result = Enum.ToObject(resultType, 3);
+            __result = AimeReaderManager.Result.Done;
             return false;
         }
 
@@ -89,6 +146,18 @@ namespace NFCAiME.AimeIO.Mod
             }
 
             __result = code;
+            return false;
+        }
+
+        private static bool GetAimeIdPrefix(ref AimeId __result)
+        {
+            CardPayload payload;
+            if (!CardCache.TryGetPayload(out payload) || payload.AimeId == 0)
+            {
+                return true;
+            }
+
+            __result = new AimeId(payload.AimeId);
             return false;
         }
 
@@ -124,6 +193,17 @@ namespace NFCAiME.AimeIO.Mod
 
             _loggedInjection = true;
             MelonLogger.Msg("[NFCAiME] injected cached card into AimeReaderManager");
+        }
+
+        private static void LogOnce(ref bool flag, string message)
+        {
+            if (flag)
+            {
+                return;
+            }
+
+            flag = true;
+            MelonLogger.Warning(message);
         }
     }
 }

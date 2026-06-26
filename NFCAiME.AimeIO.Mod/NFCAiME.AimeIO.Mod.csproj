@@ -21,12 +21,16 @@
       <HintPath>$(GameDir)\MelonLoader\net35\0Harmony.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="WebSocketDotNet">
-      <HintPath>$(GameDir)\MelonLoader\net35\WebSocketDotNet.dll</HintPath>
+    <Reference Include="AMDaemon.NET">
+      <HintPath>$(GameDir)\Sinmai_Data\Managed\AMDaemon.NET.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>$(GameDir)\MelonLoader\Managed\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(GameDir)\Sinmai_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="WebSocketDotNet">
+      <HintPath>$(GameDir)\MelonLoader\net35\WebSocketDotNet.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

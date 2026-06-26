@@ -6,6 +6,7 @@ namespace NFCAiME.AimeIO.Mod
         public string PrivateAccessCode { get; set; }
         public string OfficialAccessCode { get; set; }
         public string Idm { get; set; }
+        public uint AimeId { get; set; }
         public bool Encrypted { get; set; }
     }
 }
