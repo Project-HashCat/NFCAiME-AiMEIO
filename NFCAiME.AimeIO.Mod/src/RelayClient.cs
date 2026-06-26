@@ -113,6 +113,7 @@ namespace NFCAiME.AimeIO.Mod
                     return;
                 }
 
+                ResolveAimeId(payload);
                 CardCache.Store(payload);
                 MelonLogger.Msg("[NFCAiME] cached card payload");
             }
@@ -120,6 +121,31 @@ namespace NFCAiME.AimeIO.Mod
             {
                 MelonLogger.Warning("[NFCAiME] ignored invalid payload: " + ex.Message);
             }
+        }
+
+        private void ResolveAimeId(CardPayload payload)
+        {
+            if (payload.AimeId != 0)
+            {
+                return;
+            }
+
+            uint aimeId;
+            string accessCode;
+            string reason;
+            if (!AimeDbResolver.TryResolve(payload, _config, out aimeId, out accessCode, out reason))
+            {
+                MelonLogger.Warning("[NFCAiME] AimeDB userId resolve skipped/failed: " + reason);
+                return;
+            }
+
+            payload.AimeId = aimeId;
+            if (string.IsNullOrWhiteSpace(payload.PrivateAccessCode) && string.IsNullOrWhiteSpace(payload.OfficialAccessCode))
+            {
+                payload.PrivateAccessCode = accessCode;
+            }
+
+            MelonLogger.Msg("[NFCAiME] resolved aimeId via AimeDB: " + aimeId);
         }
 
         private static string MaskEndpoint(string endpoint)
