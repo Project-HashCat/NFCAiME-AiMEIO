@@ -1,0 +1,12 @@
+build/
+.venv/
+__pycache__/
+*.pyc
+*.user
+*.suo
+*.pdb
+*.ilk
+*.obj
+*.exp
+*.lib
+*.dll
