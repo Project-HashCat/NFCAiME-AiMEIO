@@ -17,7 +17,7 @@ namespace NFCAiME.AimeIO.Mod
 
             if (string.IsNullOrWhiteSpace(config.SessionKey))
             {
-                MelonLogger.Warning("[NFCAiME] session-key is empty. Fill segatools.ini [aimeio] or Mods/NFCAiME.AimeIO.Mod.toml");
+                MelonLogger.Warning("[NFCAiME] session-key is empty. Fill segatools.ini [nfcaimeio] or Mods/NFCAiME.AimeIO.Mod.toml");
                 return;
             }
 

@@ -76,7 +76,7 @@ namespace NFCAiME.AimeIO.Mod
                 return;
             }
 
-            var inAimeIo = false;
+            var inNFCAimeIo = false;
             foreach (var raw in File.ReadAllLines(path))
             {
                 var line = StripComment(raw).Trim();
@@ -87,11 +87,11 @@ namespace NFCAiME.AimeIO.Mod
 
                 if (line.StartsWith("[") && line.EndsWith("]"))
                 {
-                    inAimeIo = string.Equals(line, "[aimeio]", StringComparison.OrdinalIgnoreCase);
+                    inNFCAimeIo = string.Equals(line, "[nfcaimeio]", StringComparison.OrdinalIgnoreCase);
                     continue;
                 }
 
-                if (!inAimeIo)
+                if (!inNFCAimeIo)
                 {
                     continue;
                 }
