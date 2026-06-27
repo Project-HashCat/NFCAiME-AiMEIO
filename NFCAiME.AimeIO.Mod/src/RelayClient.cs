@@ -7,10 +7,16 @@ namespace NFCAiME.AimeIO.Mod
 {
     internal sealed class RelayClient
     {
+        private static volatile bool _isOnline;
         private readonly ModConfig _config;
         private Thread _thread;
         private volatile bool _running;
         private WebSocket _socket;
+
+        public static bool IsOnline
+        {
+            get { return _isOnline; }
+        }
 
         public RelayClient(ModConfig config)
         {
@@ -36,6 +42,7 @@ namespace NFCAiME.AimeIO.Mod
         public void Stop()
         {
             _running = false;
+            _isOnline = false;
             try
             {
                 if (_socket != null)
@@ -71,9 +78,12 @@ namespace NFCAiME.AimeIO.Mod
                     {
                         Thread.Sleep(1000);
                     }
+
+                    _isOnline = false;
                 }
                 catch (Exception ex)
                 {
+                    _isOnline = false;
                     MelonLogger.Warning("[NFCAiME] relay disconnected: " + ex.Message);
                 }
 
@@ -86,11 +96,13 @@ namespace NFCAiME.AimeIO.Mod
 
         private void OnOpened()
         {
+            _isOnline = true;
             MelonLogger.Msg("[NFCAiME] relay online");
         }
 
         private void OnClosed(WebSocketCloseCode code, string reason)
         {
+            _isOnline = false;
             MelonLogger.Warning("[NFCAiME] relay closed: " + code + " " + reason);
         }
 

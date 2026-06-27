@@ -14,11 +14,14 @@ namespace NFCAiME.AimeIO.Mod
         private static bool _loggedInjection;
         private static bool _loggedMissingAimeId;
         private static bool _loggedInvalidAccessCode;
+        private static bool? _lastReaderAlive;
+        private static bool? _lastServerAlive;
 
         public static void Apply(HarmonyLib.Harmony harmony)
         {
             Patch(harmony, typeof(TryAime), "Execute", nameof(TryAimeExecutePrefix));
             Patch(harmony, typeof(AimeReaderManager), "Execute", nameof(AimeReaderExecutePostfix), true);
+            Patch(harmony, typeof(OperationManager), "get_IsAliveAimeServer", nameof(IsAliveAimeServerPrefix));
             Patch(harmony, typeof(AimeReaderManager), "AnyRead", nameof(AnyReadPrefix));
             Patch(harmony, typeof(AimeReaderManager), "AdvCheck", nameof(AdvCheckPrefix));
             Patch(harmony, typeof(AimeReaderManager), "GetResult", nameof(GetResultPrefix));
@@ -117,7 +120,33 @@ namespace NFCAiME.AimeIO.Mod
 
         private static void AimeReaderExecutePostfix()
         {
-            Singleton<OperationManager>.Instance.IsAliveAimeReader = true;
+            var operation = Singleton<OperationManager>.Instance;
+            if (RelayClient.IsOnline)
+            {
+                operation.IsAliveAimeReader = true;
+            }
+
+            var readerAlive = operation.IsAliveAimeReader;
+            var serverAlive = operation.IsAliveAimeServer;
+            if (_lastReaderAlive == readerAlive && _lastServerAlive == serverAlive)
+            {
+                return;
+            }
+
+            _lastReaderAlive = readerAlive;
+            _lastServerAlive = serverAlive;
+            MelonLogger.Msg("[NFCAiME] AiME health: reader=" + readerAlive + ", server=" + serverAlive);
+        }
+
+        private static bool IsAliveAimeServerPrefix(ref bool __result)
+        {
+            if (!RelayClient.IsOnline)
+            {
+                return true;
+            }
+
+            __result = true;
+            return false;
         }
 
         private static bool AnyReadPrefix(ref bool __result)
