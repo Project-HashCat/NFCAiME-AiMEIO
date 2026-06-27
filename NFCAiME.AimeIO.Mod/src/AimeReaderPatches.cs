@@ -49,9 +49,12 @@ namespace NFCAiME.AimeIO.Mod
             }
 
             var modeProperty = typeof(TryAime).GetProperty("Mode", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (modeProperty != null && Convert.ToInt32(modeProperty.GetValue(__instance, null)) == 6)
+            if (modeProperty != null && string.Equals(
+                    Convert.ToString(modeProperty.GetValue(__instance, null)),
+                    "Suspend",
+                    StringComparison.Ordinal))
             {
-                return false;
+                return true;
             }
 
             var aimeReader = SingletonStateMachine<AmManager, AmManager.EState>.Instance.AimeReader;
@@ -66,11 +69,11 @@ namespace NFCAiME.AimeIO.Mod
 
             if (modeProperty != null)
             {
-                modeProperty.SetValue(__instance, Enum.ToObject(modeProperty.PropertyType, 3), null);
+                modeProperty.SetValue(__instance, Enum.Parse(modeProperty.PropertyType, "GetResult"), null);
             }
 
             LogInjectedOnce();
-            return false;
+            return true;
         }
 
         private static void SetField(object target, string name, object value)
@@ -105,7 +108,7 @@ namespace NFCAiME.AimeIO.Mod
 
         private static bool AnyReadPrefix(ref bool __result)
         {
-            if (!CardCache.HasValidCard())
+            if (!HasLoginReadyCard())
             {
                 return true;
             }
@@ -117,7 +120,7 @@ namespace NFCAiME.AimeIO.Mod
 
         private static bool AdvCheckPrefix(ref bool __result)
         {
-            if (!CardCache.HasValidCard())
+            if (!HasLoginReadyCard())
             {
                 return true;
             }
@@ -128,7 +131,7 @@ namespace NFCAiME.AimeIO.Mod
 
         private static bool GetResultPrefix(ref AimeReaderManager.Result __result)
         {
-            if (!CardCache.HasValidCard())
+            if (!HasLoginReadyCard())
             {
                 return true;
             }
@@ -139,20 +142,19 @@ namespace NFCAiME.AimeIO.Mod
 
         private static bool GetAccessCodePrefix(ref string __result)
         {
-            var code = CardCache.GetAccessCode();
-            if (string.IsNullOrWhiteSpace(code))
+            if (!HasLoginReadyCard())
             {
                 return true;
             }
 
-            __result = code;
+            __result = CardCache.GetAccessCode();
             return false;
         }
 
         private static bool GetAimeIdPrefix(ref AimeId __result)
         {
             CardPayload payload;
-            if (!CardCache.TryGetPayload(out payload) || payload.AimeId == 0)
+            if (!TryGetLoginReadyPayload(out payload))
             {
                 return true;
             }
@@ -163,6 +165,11 @@ namespace NFCAiME.AimeIO.Mod
 
         private static bool GetOfflineIdStringPrefix(ref string __result)
         {
+            if (!HasLoginReadyCard())
+            {
+                return true;
+            }
+
             var offlineId = CardCache.GetOfflineId();
             if (string.IsNullOrWhiteSpace(offlineId))
             {
@@ -175,13 +182,26 @@ namespace NFCAiME.AimeIO.Mod
 
         private static bool GetSegaIdAuthKeyPrefix(ref string __result)
         {
-            if (!CardCache.HasValidCard())
+            if (!HasLoginReadyCard())
             {
                 return true;
             }
 
             __result = "";
             return false;
+        }
+
+        private static bool HasLoginReadyCard()
+        {
+            CardPayload payload;
+            return TryGetLoginReadyPayload(out payload);
+        }
+
+        private static bool TryGetLoginReadyPayload(out CardPayload payload)
+        {
+            return CardCache.TryGetPayload(out payload)
+                && payload.AimeId != 0
+                && AccessCode.CanMake(CardCache.GetAccessCode(payload));
         }
 
         private static void LogInjectedOnce()
