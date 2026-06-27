@@ -27,7 +27,7 @@ namespace NFCAiME.AimeIO.Mod
             var config = new ModConfig();
 
             ReadToml(Path.Combine(root, ConfigFileName), config);
-            ReadSegatoolsIni(Path.Combine(root, "segatools.ini"), config);
+            ReadSegatoolsIni(FindSegatoolsIni(root), config);
 
             if (string.IsNullOrWhiteSpace(config.SessionKey))
             {
@@ -210,6 +210,27 @@ namespace NFCAiME.AimeIO.Mod
                     config.AimeDbKeychip = value;
                 }
             }
+        }
+
+        private static string FindSegatoolsIni(string root)
+        {
+            var directory = new DirectoryInfo(root);
+            for (var i = 0; i < 3 && directory != null; i++, directory = directory.Parent)
+            {
+                var path = Path.Combine(directory.FullName, "segatools.ini");
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+
+                path = Path.Combine(directory.FullName, "AMDaemon", "segatools.ini");
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+            }
+
+            return Path.Combine(root, "segatools.ini");
         }
 
         private static void WriteDefaultToml(string path, ModConfig config)
