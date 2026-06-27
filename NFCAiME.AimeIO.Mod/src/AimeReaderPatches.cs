@@ -18,6 +18,7 @@ namespace NFCAiME.AimeIO.Mod
         public static void Apply(HarmonyLib.Harmony harmony)
         {
             Patch(harmony, typeof(TryAime), "Execute", nameof(TryAimeExecutePrefix));
+            Patch(harmony, typeof(AimeReaderManager), "Execute", nameof(AimeReaderExecutePostfix), true);
             Patch(harmony, typeof(AimeReaderManager), "AnyRead", nameof(AnyReadPrefix));
             Patch(harmony, typeof(AimeReaderManager), "AdvCheck", nameof(AdvCheckPrefix));
             Patch(harmony, typeof(AimeReaderManager), "GetResult", nameof(GetResultPrefix));
@@ -93,17 +94,30 @@ namespace NFCAiME.AimeIO.Mod
             field.SetValue(target, value);
         }
 
-        private static void Patch(HarmonyLib.Harmony harmony, System.Type targetType, string targetName, string prefixName)
+        private static void Patch(
+            HarmonyLib.Harmony harmony,
+            System.Type targetType,
+            string targetName,
+            string patchName,
+            bool postfix = false)
         {
             var target = AccessTools.Method(targetType, targetName);
-            var prefix = typeof(AimeReaderPatches).GetMethod(prefixName, BindingFlags.Static | BindingFlags.NonPublic);
-            if (target == null || prefix == null)
+            var patch = typeof(AimeReaderPatches).GetMethod(patchName, BindingFlags.Static | BindingFlags.NonPublic);
+            if (target == null || patch == null)
             {
                 MelonLogger.Warning("[NFCAiME] patch skipped: " + targetName);
                 return;
             }
 
-            harmony.Patch(target, prefix: new HarmonyMethod(prefix));
+            harmony.Patch(
+                target,
+                prefix: postfix ? null : new HarmonyMethod(patch),
+                postfix: postfix ? new HarmonyMethod(patch) : null);
+        }
+
+        private static void AimeReaderExecutePostfix()
+        {
+            Singleton<OperationManager>.Instance.IsAliveAimeReader = true;
         }
 
         private static bool AnyReadPrefix(ref bool __result)
