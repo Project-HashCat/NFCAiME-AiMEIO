@@ -14,8 +14,9 @@ flowchart LR
     click APP "https://github.com/Project-HashCat/NFCAiME" "打开 NFCAiME App 项目"
 ```
 
+> **点对点加密：** NFCAiME 手机端会在发送前使用 AES-GCM 加密卡片数据，只有电脑端 AiMEIO Mod 负责解密。Relay 服务器仅根据 `session-key` 转发密文，不持有解密密钥，也不会获得卡号、IDm、AimeId 等明文内容。
+
 - Relay 只负责按 `session-key` 转发数据，不保存卡片记录。
-- 卡片 payload 使用 AES-GCM 加密，Relay 不参与解密。
 - Mod 收到数据后默认缓存 5 秒，过期数据不会继续用于登录。
 - `session-key` 是路由标识，不是账号密码。请勿公开自己的 key。
 
