@@ -29,9 +29,9 @@ namespace NFCAiME.AimeIO.Mod
                 return false;
             }
 
-            if (IsOfficialAimeDb(config.AimeDbHost))
+            if (IsBlockedAimeDbHost(config.AimeDbHost))
             {
-                reason = "official AimeDB requires CMD17; skip CMD15";
+                reason = "AimeDB host is not supported";
                 return false;
             }
 
@@ -234,9 +234,9 @@ namespace NFCAiME.AimeIO.Mod
             stream.Write(fixedBytes, 0, fixedBytes.Length);
         }
 
-        private static bool IsOfficialAimeDb(string host)
+        private static bool IsBlockedAimeDbHost(string host)
         {
-            host = (host ?? "").Trim().ToLowerInvariant();
+            host = (host ?? "").Trim().TrimEnd('.').ToLowerInvariant();
             return host == "aime.naominet.jp";
         }
 
